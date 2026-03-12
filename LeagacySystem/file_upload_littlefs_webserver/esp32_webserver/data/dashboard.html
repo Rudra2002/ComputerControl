@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="login-container">
+      <h2>Welcome to Dashboard</h2>
+      <p>You are logged in!</p>
+      <button id="logoutBtn" class="login-btn">Logout</button>
+    </div>
+  </div>
+  <script>
+    // Session timeout and logout
+    let inactivityTimer;
+    function resetTimer() {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(logout, 5 * 60 * 1000); // 5 minutes
+    }
+    function logout() {
+      fetch('/logout').then(() => {
+        window.location.href = '/';
+      });
+    }
+    document.addEventListener('mousemove', resetTimer);
+    document.addEventListener('keydown', resetTimer);
+    document.addEventListener('mousedown', resetTimer);
+    document.addEventListener('touchstart', resetTimer);
+    resetTimer();
+
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+
+    // Optional: check session validity every 30s
+    setInterval(() => {
+      fetch('/ping').catch(() => window.location = '/');
+    }, 30000);
+  </script>
+</body>
+</html>

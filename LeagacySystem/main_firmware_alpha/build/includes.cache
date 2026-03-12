@@ -1,0 +1,17 @@
+[
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "C:\\Users\\aniru\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\3.1.2\\cores\\esp8266"
+  },
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "C:\\Users\\aniru\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\3.1.2\\variants\\d1_mini"
+  },
+  {
+    "Sourcefile": "c:\\work\\Project\\pc-power-remote-switch\\arduino_code\\main_firmware_alpha\\build\\sketch\\main_firmware_alpha.ino.cpp",
+    "Include": "",
+    "Includepath": null
+  }
+]

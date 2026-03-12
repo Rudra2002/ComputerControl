@@ -1,0 +1,18 @@
+# Dependencies
+web/node_modules/
+
+# Build output
+web/dist/
+
+# PlatformIO
+firmware/.pio/
+firmware/.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Computer Control — Remote PC Dashboard</title>
+  <meta name="description" content="Control your PC remotely via ESP32 and MQTT. Power on, restart, and monitor status from anywhere." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖥️</text></svg>" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Ambient background effects -->
+    <div class="ambient-bg">
+      <div class="ambient-orb orb-1"></div>
+      <div class="ambient-orb orb-2"></div>
+      <div class="ambient-orb orb-3"></div>
+    </div>
+
+    <!-- ========== CONNECTION SCREEN ========== -->
+    <div id="connectScreen" class="screen active">
+      <div class="connect-card glass-card">
+        <div class="connect-header">
+          <div class="logo-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <h1>Computer Control</h1>
+          <p class="subtitle">Connect to your ESP32 to control your PC remotely</p>
+        </div>
+
+        <form id="connectForm" autocomplete="off">
+          <div class="form-group">
+            <label for="brokerUrl">MQTT Broker</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <input type="text" id="brokerUrl" placeholder="wss://broker.emqx.io:8084/mqtt" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="deviceId">Device ID</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                <input type="text" id="deviceId" placeholder="esp32-pc-ctrl" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="accessPassword">Password</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input type="password" id="accessPassword" placeholder="••••••••" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="mqttUser">MQTT Username <span class="optional">(optional)</span></label>
+            <div class="input-wrapper">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="mqttUser" placeholder="username" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="mqttPass">MQTT Password <span class="optional">(optional)</span></label>
+            <div class="input-wrapper">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              <input type="password" id="mqttPass" placeholder="••••••••" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <label class="checkbox-wrapper">
+              <input type="checkbox" id="rememberSettings" checked />
+              <span class="checkmark"></span>
+              Remember settings
+            </label>
+          </div>
+
+          <button type="submit" id="connectBtn" class="btn-primary">
+            <span class="btn-text">Connect</span>
+            <span class="btn-loader" hidden>
+              <span class="spinner"></span> Connecting...
+            </span>
+          </button>
+
+          <div id="connectError" class="error-message" hidden></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========== DASHBOARD SCREEN ========== -->
+    <div id="dashboardScreen" class="screen">
+      <header class="dash-header">
+        <div class="dash-header-left">
+          <div class="logo-icon small">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <h2>Computer Control</h2>
+        </div>
+        <div class="dash-header-right">
+          <div class="connection-badge" id="connectionBadge">
+            <span class="conn-dot"></span>
+            <span class="conn-text">Connected</span>
+          </div>
+          <button class="btn-icon-only" id="settingsBtn" title="Settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+          <button class="btn-icon-only danger" id="disconnectBtn" title="Disconnect">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="dash-main">
+        <!-- PC Status Hero -->
+        <div class="status-hero glass-card" id="statusHero">
+          <div class="status-ring" id="statusRing">
+            <div class="status-inner">
+              <div class="status-icon" id="statusIcon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <h3 class="status-label" id="statusLabel">Checking...</h3>
+              <p class="status-sub" id="statusSub">Waiting for data</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="controls-grid">
+          <button class="control-btn power-btn glass-card" id="powerBtn">
+            <div class="control-btn-bg"></div>
+            <div class="control-btn-content">
+              <svg class="control-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+              <span class="control-label">Power</span>
+              <span class="control-sub" id="powerSub">Turn on your PC</span>
+            </div>
+          </button>
+
+          <button class="control-btn restart-btn glass-card" id="restartBtn">
+            <div class="control-btn-bg"></div>
+            <div class="control-btn-content">
+              <svg class="control-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              <span class="control-label">Restart</span>
+              <span class="control-sub" id="restartSub">Reboot your PC</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="info-grid">
+          <div class="info-card glass-card">
+            <div class="info-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div class="info-card-content">
+              <span class="info-label">ESP32 Uptime</span>
+              <span class="info-value" id="uptimeValue">—</span>
+            </div>
+          </div>
+
+          <div class="info-card glass-card">
+            <div class="info-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            </div>
+            <div class="info-card-content">
+              <span class="info-label">WiFi Signal</span>
+              <span class="info-value" id="wifiValue">—</span>
+            </div>
+          </div>
+
+          <div class="info-card glass-card">
+            <div class="info-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            </div>
+            <div class="info-card-content">
+              <span class="info-label">ESP32 IP</span>
+              <span class="info-value" id="ipValue">—</span>
+            </div>
+          </div>
+
+          <div class="info-card glass-card">
+            <div class="info-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="info-card-content">
+              <span class="info-label">Last Update</span>
+              <span class="info-value" id="lastUpdateValue">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="activity-panel glass-card">
+          <h4 class="panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Activity Log
+          </h4>
+          <div class="activity-list" id="activityList">
+            <div class="activity-empty">No activity yet. Waiting for connection...</div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ========== Toast Container ========== -->
+    <div id="toastContainer" class="toast-container"></div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
