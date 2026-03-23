@@ -116,6 +116,8 @@ The circuit schematic is designed in **KiCad** and included in the [`kicad-circu
 
 > Full schematic available as [PDF](kicad-circuit/scematic.pdf) and [SVG](kicad-circuit/pc-power-remote-switch.svg). The KiCad project files (`.kicad_sch`, `.kicad_pcb`, `.kicad_pro`) are also included for editing.
 
+![Hardware Image](project.jpeg)
+
 ### Key Circuit Details
 
 | Component | Connection | Purpose |
