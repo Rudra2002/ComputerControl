@@ -15,19 +15,18 @@
  */
 
 #include <Arduino.h>
-#include <WiFi.h>
+#include <ESP8266WiFi.h>
 #include <WiFiManager.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <Preferences.h>
 #include "config.h"
+#include <EEPROM.h>
 
 // ============================================================
 //  Globals
 // ============================================================
 WiFiClient   wifiClient;
 PubSubClient mqttClient(wifiClient);
-Preferences  preferences;
 
 // MQTT settings (loaded from flash / WiFiManager)
 char mqtt_host[64]   = DEFAULT_MQTT_HOST;
@@ -83,7 +82,7 @@ void saveConfigCallback() {
 void setup() {
     Serial.begin(115200);
     Serial.println("\n=============================");
-    Serial.println(" ESP32 Computer Control v2.0");
+    Serial.println(" ESP8266 Computer Control v2.0");
     Serial.println("=============================\n");
 
     setupPins();
@@ -95,9 +94,11 @@ void setup() {
     if (digitalRead(CONFIG_RESET_PIN) == LOW) {
         Serial.println("[CONFIG] Reset button held — clearing saved config...");
         blinkLED(10, 100);  // Rapid blink to confirm reset
-        preferences.begin("mqtt", false);
-        preferences.clear();
-        preferences.end();
+        // Clear EEPROM-stored config
+        EEPROM.begin(512);
+        for (int i = 0; i < 512; i++) EEPROM.write(i, 0);
+        EEPROM.commit();
+        EEPROM.end();
         // WiFiManager will also reset
         WiFiManager wm;
         wm.resetSettings();
@@ -164,19 +165,32 @@ void setupPins() {
 //  Config: Load from Preferences (flash)
 // ============================================================
 void loadConfig() {
-    preferences.begin("mqtt", true);  // read-only
-    String h = preferences.getString("host", DEFAULT_MQTT_HOST);
-    String p = preferences.getString("port", DEFAULT_MQTT_PORT);
-    String d = preferences.getString("devid", DEFAULT_DEVICE_ID);
-    String u = preferences.getString("user", DEFAULT_MQTT_USER);
-    String pw = preferences.getString("pass", DEFAULT_MQTT_PASS);
-    preferences.end();
+    // Load config from EEPROM (JSON blob)
+    EEPROM.begin(512);
+    String stored = "";
+    for (int i = 0; i < 512; i++) {
+        char c = EEPROM.read(i);
+        if (c == 0) break;
+        stored += c;
+    }
+    if (stored.length() > 0) {
+        DynamicJsonDocument doc(512);
+        DeserializationError err = deserializeJson(doc, stored);
+        if (!err) {
+            String h = doc["host"] | DEFAULT_MQTT_HOST;
+            String p = doc["port"] | DEFAULT_MQTT_PORT;
+            String d = doc["devid"] | DEFAULT_DEVICE_ID;
+            String u = doc["user"] | DEFAULT_MQTT_USER;
+            String pw = doc["pass"] | DEFAULT_MQTT_PASS;
 
-    h.toCharArray(mqtt_host, sizeof(mqtt_host));
-    p.toCharArray(mqtt_port, sizeof(mqtt_port));
-    d.toCharArray(device_id, sizeof(device_id));
-    u.toCharArray(mqtt_user, sizeof(mqtt_user));
-    pw.toCharArray(mqtt_pass, sizeof(mqtt_pass));
+            h.toCharArray(mqtt_host, sizeof(mqtt_host));
+            p.toCharArray(mqtt_port, sizeof(mqtt_port));
+            d.toCharArray(device_id, sizeof(device_id));
+            u.toCharArray(mqtt_user, sizeof(mqtt_user));
+            pw.toCharArray(mqtt_pass, sizeof(mqtt_pass));
+        }
+    }
+    EEPROM.end();
 
     Serial.printf("[CONFIG] Loaded — Host: %s  Port: %s  Device: %s  User: %s\n",
                   mqtt_host, mqtt_port, device_id,
@@ -187,14 +201,25 @@ void loadConfig() {
 //  Config: Save to Preferences (flash)
 // ============================================================
 void saveConfig() {
-    preferences.begin("mqtt", false);  // read-write
-    preferences.putString("host", mqtt_host);
-    preferences.putString("port", mqtt_port);
-    preferences.putString("devid", device_id);
-    preferences.putString("user", mqtt_user);
-    preferences.putString("pass", mqtt_pass);
-    preferences.end();
-    Serial.println("[CONFIG] Saved to flash.");
+    // Save config to EEPROM as JSON
+    DynamicJsonDocument doc(512);
+    doc["host"] = String(mqtt_host);
+    doc["port"] = String(mqtt_port);
+    doc["devid"] = String(device_id);
+    doc["user"] = String(mqtt_user);
+    doc["pass"] = String(mqtt_pass);
+    String out;
+    serializeJson(doc, out);
+    if (out.length() >= 512) {
+        Serial.println("[CONFIG] Error: config too large to save.");
+        return;
+    }
+    EEPROM.begin(512);
+    for (size_t i = 0; i < out.length(); i++) EEPROM.write(i, out[i]);
+    EEPROM.write(out.length(), 0); // terminator
+    EEPROM.commit();
+    EEPROM.end();
+    Serial.println("[CONFIG] Saved to EEPROM.");
 }
 
 // ============================================================
@@ -235,13 +260,13 @@ void setupWiFiManager() {
     Serial.printf("[WIFI] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
 
     // Read custom parameters after portal saves
-    if (shouldSaveConfig) {
+        if (shouldSaveConfig) {
         strncpy(mqtt_host, param_mqtt_host.getValue(), sizeof(mqtt_host) - 1);
         strncpy(mqtt_port, param_mqtt_port.getValue(), sizeof(mqtt_port) - 1);
         strncpy(device_id, param_device_id.getValue(), sizeof(device_id) - 1);
         strncpy(mqtt_user, param_mqtt_user.getValue(), sizeof(mqtt_user) - 1);
         strncpy(mqtt_pass, param_mqtt_pass.getValue(), sizeof(mqtt_pass) - 1);
-        saveConfig();
+            saveConfig();
     }
 }
 
@@ -271,7 +296,7 @@ void connectMQTT() {
     // LWT payload — sent by broker if ESP32 disconnects unexpectedly
     String lwtPayload = "{\"online\":false}";
 
-    String clientId = "esp32-" + String(device_id) + "-" + String(random(0xFFFF), HEX);
+    String clientId = "esp8266-" + String(device_id) + "-" + String(random(0xFFFF), HEX);
 
     bool connected;
     if (strlen(mqtt_user) > 0) {
