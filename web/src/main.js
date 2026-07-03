@@ -283,17 +283,21 @@ function handleStatusUpdate(data) {
     statusLabel.textContent = 'PC Online';
     statusSub.textContent = 'Your PC is running';
     statusIcon.innerHTML = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
-    powerSub.textContent = 'PC is already on';
+    powerSub.textContent = 'Shutdown your PC';
     restartSub.textContent = 'Reboot your PC';
-    powerBtn.classList.add('disabled');
+    const pwrLabelOn = powerBtn.querySelector('.control-label');
+    if (pwrLabelOn) { pwrLabelOn.textContent = 'Shutdown'; if (pwrLabelOn.dataset.original) pwrLabelOn.dataset.original = 'Shutdown'; }
+    powerBtn.classList.remove('disabled');
     restartBtn.classList.remove('disabled');
   } else {
     statusRing.className = 'status-ring offline';
     statusLabel.textContent = 'PC Offline';
     statusSub.textContent = 'Your PC is powered off';
     statusIcon.innerHTML = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`;
-    powerSub.textContent = 'Turn on your PC';
+    powerSub.textContent = 'Power on your PC';
     restartSub.textContent = 'PC must be on first';
+    const pwrLabelOff = powerBtn.querySelector('.control-label');
+    if (pwrLabelOff) { pwrLabelOff.textContent = 'Power On'; if (pwrLabelOff.dataset.original) pwrLabelOff.dataset.original = 'Power On'; }
     powerBtn.classList.remove('disabled');
     restartBtn.classList.add('disabled');
   }
