@@ -147,6 +147,10 @@ function handleConnect(e) {
     return;
   }
 
+  // Auto-upgrade ws:// to wss:// when served over HTTPS
+  const useWss = window.location.protocol === 'https:';
+  const finalBroker = useWss && broker.startsWith('ws://') ? 'wss://' + broker.slice(5) : broker;
+
   // Build topics
   const prefix = `computercontrol/${deviceId}`;
   topics.status   = `${prefix}/status`;
@@ -177,7 +181,7 @@ function handleConnect(e) {
   }
 
   try {
-    client = mqtt.connect(broker, options);
+    client = mqtt.connect(finalBroker, options);
   } catch (err) {
     showError(`Connection failed: ${err.message}`);
     setConnectLoading(false);
