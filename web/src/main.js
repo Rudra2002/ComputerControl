@@ -147,10 +147,9 @@ function handleConnect(e) {
     return;
   }
 
-  // Auto-upgrade ws:// to wss:// when page is served over HTTPS
-  if (location.protocol === 'https:' && broker.startsWith('ws://')) {
-    broker = 'wss://' + broker.slice(5);
-  }
+  // Auto-upgrade ws:// to wss:// when served over HTTPS
+  const useWss = window.location.protocol === 'https:';
+  const finalBroker = useWss && broker.startsWith('ws://') ? 'wss://' + broker.slice(5) : broker;
 
   // Build topics
   const prefix = `computercontrol/${deviceId}`;
@@ -169,7 +168,6 @@ function handleConnect(e) {
     clean: true,
     reconnectPeriod: 5000,
     connectTimeout: 10000,
-    rejectUnauthorized: false,
     clientId: `cc-web-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
   };
 
@@ -183,7 +181,7 @@ function handleConnect(e) {
   }
 
   try {
-    client = mqtt.connect(broker, options);
+    client = mqtt.connect(finalBroker, options);
   } catch (err) {
     showError(`Connection failed: ${err.message}`);
     setConnectLoading(false);
